@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>GlitchCheck CAPTCHA v2.0</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#008080;font-family:'MS Sans Serif','Microsoft Sans Serif',Tahoma,sans-serif;font-size:11px;min-height:100vh;overflow-x:hidden}
+  button{font-family:inherit;font-size:11px;cursor:pointer}
+  .raised{border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #808080;border-bottom:2px solid #808080}
+  .sunken{border-top:2px solid #808080;border-left:2px solid #808080;border-right:2px solid #fff;border-bottom:2px solid #fff}
+  .deep-sunken{border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #dfdfdf;border-bottom:2px solid #dfdfdf}
+  .w95btn{background:#c0c0c0;padding:3px 12px;min-width:64px;color:#000;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #808080;border-bottom:2px solid #808080}
+  .w95btn:active,.w95btn.pressed{border-top:2px solid #808080;border-left:2px solid #808080;border-right:2px solid #fff;border-bottom:2px solid #fff;padding-top:4px;padding-left:13px}
+  .w95btn:disabled{color:#808080;cursor:default}
+  .titlebar{background:linear-gradient(to right,#000080,#1084d0);padding:2px 4px;display:flex;align-items:center;justify-content:space-between;user-select:none}
+  .titlebar-btn{width:16px;height:14px;background:#c0c0c0;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #404040;border-bottom:1px solid #404040;font-size:9px;display:flex;align-items:center;justify-content:center;padding:0}
+  .menubar{border-bottom:1px solid #808080;padding:1px 4px;display:flex;gap:2px;background:#c0c0c0}
+  .menubar span{padding:1px 6px;cursor:default}
+  .menubar span:hover{background:#000080;color:#fff}
+  .statusbar{border-top:1px solid #808080;display:flex;gap:1px;padding:1px 2px}
+  .status-pane{border-top:2px solid #808080;border-left:2px solid #808080;border-right:2px solid #fff;border-bottom:2px solid #fff;padding:1px 6px;font-size:10px;white-space:nowrap}
+  .taskbar{position:fixed;bottom:0;left:0;right:0;background:#c0c0c0;border-top:2px solid #fff;height:30px;display:flex;align-items:center;padding:0 2px;gap:4px;z-index:9000}
+  .desktop-icon{position:fixed;display:flex;flex-direction:column;align-items:center;gap:3px;width:72px;cursor:default;user-select:none;padding:4px}
+  .desktop-icon:hover .icon-label{background:#000080}
+  .icon-label{color:#fff;font-size:10px;text-align:center;line-height:1.3;padding:1px 2px;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+  @keyframes scanline{0%{top:0}100%{top:100%}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+  @keyframes errorPop{from{transform:scale(0.88);opacity:0}to{transform:scale(1);opacity:1}}
+  .blink{animation:blink 0.6s infinite}
+  ::-webkit-scrollbar{width:16px}
+  ::-webkit-scrollbar-track{background:#c0c0c0}
+  ::-webkit-scrollbar-thumb{background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #808080;border-bottom:2px solid #808080}
+  #collage-viewport{position:relative;width:476px;height:408px;overflow:hidden;background:#08080e;border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #dfdfdf;border-bottom:2px solid #dfdfdf}
+  .fragment{position:absolute;cursor:crosshair}
+  .fragment canvas{display:block;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}
+  .error-dialog{position:absolute;width:240px;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #808080;border-bottom:2px solid #808080;box-shadow:1px 1px 0 #000;animation:errorPop 0.07s ease-out;z-index:99999}
+  .win95-window{position:absolute;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #808080;border-bottom:2px solid #808080;box-shadow:2px 2px 0 #000;z-index:9000}
+</style>
+</head>
+<body>
+
+<!-- Desktop icons -->
+<div class="desktop-icon" style="top:18px;left:18px" ondblclick="void(0)">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><?xml version="1.0"?><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="2" y="2" width="28" height="20" fill="#c0c0c0" stroke="#000" stroke-width="1"/><rect x="3" y="3" width="26" height="18" fill="#000080"/><rect x="4" y="4" width="24" height="16" fill="#0000aa"/><rect x="4" y="4" width="8" height="2" fill="#3333dd" opacity="0.6"/><rect x="12" y="22" width="8" height="3" fill="#a0a0a0" stroke="#000" stroke-width="1"/><rect x="8" y="25" width="16" height="2" fill="#808080" stroke="#000" stroke-width="1"/></svg></div>
+  <div class="icon-label">My Existence</div>
+</div>
+<div class="desktop-icon" style="top:110px;left:18px">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="7" y="12" width="18" height="16" fill="#c0c0c0" stroke="#000" stroke-width="1"/><rect x="8" y="13" width="16" height="14" fill="#d4d0c8"/><rect x="10" y="15" width="5" height="4" fill="#fff" stroke="#808080" stroke-width="1" transform="rotate(-8 12 17)"/><rect x="16" y="16" width="4" height="5" fill="#fff" stroke="#808080" stroke-width="1" transform="rotate(5 18 18)"/><rect x="6" y="9" width="20" height="3" fill="#c0c0c0" stroke="#000" stroke-width="1"/><rect x="13" y="7" width="6" height="3" fill="#c0c0c0" stroke="#000" stroke-width="1"/><rect x="11" y="14" width="1" height="12" fill="#a0a0a0"/><rect x="15" y="14" width="1" height="12" fill="#a0a0a0"/><rect x="19" y="14" width="1" height="12" fill="#a0a0a0"/></svg></div>
+  <div class="icon-label">Recycle Bin (Full)</div>
+</div>
+<div class="desktop-icon" style="top:202px;left:18px">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><circle cx="16" cy="16" r="13" fill="#4488cc" stroke="#000" stroke-width="1"/><rect x="10" y="8" width="8" height="5" fill="#44aa44" rx="1"/><rect x="6" y="14" width="6" height="6" fill="#44aa44" rx="1"/><rect x="16" y="16" width="7" height="5" fill="#44aa44" rx="1"/><line x1="16" y1="3" x2="16" y2="29" stroke="#2266aa" stroke-width="1"/><line x1="3" y1="16" x2="29" y2="16" stroke="#2266aa" stroke-width="1"/><ellipse cx="16" cy="16" rx="6" ry="13" fill="none" stroke="#2266aa" stroke-width="1"/></svg></div>
+  <div class="icon-label">The Void</div>
+</div>
+<div class="desktop-icon" style="top:294px;left:18px">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="2" y="11" width="28" height="18" fill="#ddbb44" stroke="#000" stroke-width="1"/><rect x="3" y="12" width="26" height="16" fill="#ffdd66"/><rect x="2" y="8" width="10" height="4" fill="#ddbb44" stroke="#000" stroke-width="1"/><rect x="3" y="9" width="8" height="2" fill="#ffdd66"/></svg></div>
+  <div class="icon-label">Lost Memories</div>
+</div>
+<div class="desktop-icon" style="top:386px;left:18px">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="4" y="2" width="24" height="28" fill="#222266" stroke="#000" stroke-width="1"/><rect x="6" y="12" width="20" height="14" fill="#ccccdd"/><rect x="7" y="13" width="18" height="12" fill="#eeeeff"/><rect x="10" y="14" width="8" height="9" fill="#888899" stroke="#444" stroke-width="1"/><rect x="6" y="3" width="14" height="8" fill="#ccccdd"/><rect x="16" y="3" width="10" height="8" fill="#111144"/></svg></div>
+  <div class="icon-label">Unsaved Self</div>
+</div>
+<div class="desktop-icon" style="top:18px;right:18px">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="2" y="10" width="14" height="17" fill="#ccaa33" stroke="#000" stroke-width="1"/><polygon points="2,10 16,10 26,6 12,6" fill="#ffdd66" stroke="#000" stroke-width="1"/><rect x="4" y="14" width="26" height="14" fill="#ffdd66" stroke="#000" stroke-width="1"/><rect x="5" y="15" width="24" height="12" fill="#ffee88"/><rect x="2" y="7" width="10" height="4" fill="#ddbb44" stroke="#000" stroke-width="1"/></svg></div>
+  <div class="icon-label">C:\Who Am I</div>
+</div>
+<div class="desktop-icon" style="top:110px;right:18px">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="14" y="2" width="4" height="10" fill="#555"/><rect x="12" y="10" width="8" height="6" fill="#888" stroke="#000" stroke-width="1"/><rect x="13" y="16" width="2" height="6" fill="#666" stroke="#000" stroke-width="1"/><rect x="17" y="16" width="2" height="6" fill="#666" stroke="#000" stroke-width="1"/><ellipse cx="16" cy="12" rx="6" ry="5" fill="#c0c0c0" stroke="#000" stroke-width="1"/><circle cx="14" cy="12" r="1" fill="#555"/><circle cx="18" cy="12" r="1" fill="#555"/></svg></div>
+  <div class="icon-label">Disconnect.exe</div>
+</div>
+<div class="desktop-icon" style="top:202px;right:18px">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><polygon points="16,2 30,28 2,28" fill="#ffdd00" stroke="#000" stroke-width="1"/><polygon points="16,4 28,27 4,27" fill="#ffee44"/><rect x="15" y="11" width="2" height="10" fill="#000"/><rect x="15" y="23" width="2" height="2" fill="#000"/></svg></div>
+  <div class="icon-label">Error Log (∞)</div>
+</div>
+<div class="desktop-icon" style="top:294px;right:18px">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="6" y="2" width="20" height="24" fill="#c0a060" stroke="#000" stroke-width="1"/><rect x="8" y="4" width="16" height="20" fill="#88aacc"/><ellipse cx="16" cy="11" rx="5" ry="6" fill="none" stroke="#aaccee" stroke-width="1" opacity="0.7"/><rect x="12" y="26" width="8" height="2" fill="#c0a060" stroke="#000" stroke-width="1"/><rect x="10" y="28" width="12" height="2" fill="#a08040" stroke="#000" stroke-width="1"/></svg></div>
+  <div class="icon-label">Mirror.dll</div>
+</div>
+<div class="desktop-icon" style="top:386px;right:18px">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><ellipse cx="16" cy="16" rx="13" ry="8" fill="#fff" stroke="#000" stroke-width="1"/><circle cx="16" cy="16" r="6" fill="#4488cc"/><circle cx="16" cy="16" r="3" fill="#111"/><circle cx="14" cy="14" r="1" fill="#fff"/><line x1="8" y1="11" x2="9" y2="9" stroke="#000" stroke-width="1"/><line x1="12" y1="9" x2="12" y2="7" stroke="#000" stroke-width="1"/><line x1="16" y1="8" x2="16" y2="6" stroke="#000" stroke-width="1"/><line x1="20" y1="9" x2="20" y2="7" stroke="#000" stroke-width="1"/><line x1="24" y1="11" x2="25" y2="9" stroke="#000" stroke-width="1"/></svg></div>
+  <div class="icon-label">Watching You</div>
+</div>
+<div class="desktop-icon" style="bottom:80px;left:18px">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="2" y="4" width="28" height="20" fill="#c0c0c0" stroke="#000" stroke-width="1"/><rect x="4" y="6" width="22" height="16" fill="#111" stroke="#808080" stroke-width="1"/><rect x="4" y="7" width="22" height="1" fill="#444"/><rect x="4" y="9" width="22" height="1" fill="#666"/><rect x="4" y="11" width="22" height="2" fill="#fff" opacity="0.08"/><rect x="4" y="14" width="22" height="1" fill="#444"/><line x1="10" y1="4" x2="6" y2="0" stroke="#000" stroke-width="1"/><line x1="18" y1="4" x2="22" y2="0" stroke="#000" stroke-width="1"/><rect x="10" y="24" width="12" height="3" fill="#a0a0a0" stroke="#000" stroke-width="1"/></svg></div>
+  <div class="icon-label">Static Feed</div>
+</div>
+<div class="desktop-icon" style="bottom:80px;right:18px">
+  <div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))"><svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><ellipse cx="13" cy="15" rx="9" ry="11" fill="#ddaaaa" stroke="#000" stroke-width="1"/><ellipse cx="20" cy="15" rx="9" ry="11" fill="#ddaaaa" stroke="#000" stroke-width="1"/><rect x="15" y="5" width="2" height="20" fill="#cc8888"/><path d="M7 10 Q10 8 13 10 Q10 12 7 10" fill="#cc9999" stroke="#aa7777" stroke-width="1"/><path d="M7 16 Q10 14 13 16 Q10 18 7 16" fill="#cc9999" stroke="#aa7777" stroke-width="1"/><path d="M19 10 Q22 8 25 10 Q22 12 19 10" fill="#cc9999" stroke="#aa7777" stroke-width="1"/><rect x="14" y="26" width="4" height="4" fill="#ddaaaa" stroke="#000" stroke-width="1"/><rect x="9" y="22" width="6" height="1" fill="#ff4444" opacity="0.6"/><rect x="17" y="22" width="6" height="1" fill="#ff4444" opacity="0.6"/></svg></div>
+  <div class="icon-label">Neural Net (empty)</div>
+</div>
+
+<!-- Main CAPTCHA window -->
+<div id="main-window" style="position:relative;z-index:100;display:flex;align-items:center;justify-content:center;min-height:100vh;padding-bottom:30px">
+<div class="raised" style="background:#c0c0c0;width:510px;box-shadow:4px 4px 0 #000">
+
+  <!-- Title bar -->
+  <div class="titlebar">
+    <div style="display:flex;align-items:center;gap:4px">
+      <div style="width:14px;height:14px;background:#c0c0c0;border:1px solid #808080;display:flex;align-items:center;justify-content:center">
+        <svg width="10" height="11" viewBox="0 0 10 11" shapeRendering="crispEdges"><rect x="2" y="5" width="6" height="5" fill="#c0a020" stroke="#806000" stroke-width="1"/><path d="M3 5 L3 3 Q5 1 7 3 L7 5" fill="none" stroke="#806000" stroke-width="1.5"/><rect x="4" y="7" width="2" height="2" fill="#806000"/></svg>
+      </div>
+      <span style="color:#fff;font-size:11px;font-weight:bold">CAPTCHA Verification - GlitchCheck v2.0</span>
+    </div>
+    <div style="display:flex;gap:2px">
+      <button class="titlebar-btn">-</button>
+      <button class="titlebar-btn">[ ]</button>
+      <button class="titlebar-btn">x</button>
+    </div>
+  </div>
+
+  <!-- Menu bar -->
+  <div class="menubar">
+    <span>File</span><span>View</span><span>Help</span>
+  </div>
+
+  <!-- UPLOAD STEP -->
+  <div id="step-upload">
+    <div style="padding:14px">
+      <div class="deep-sunken" style="background:#fff;padding:7px 10px;margin-bottom:10px;line-height:1.7">
+        <div style="font-weight:bold;margin-bottom:2px;display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 32 32" shapeRendering="crispEdges"><circle cx="12" cy="14" r="8" fill="#ffdd44" stroke="#000" stroke-width="2"/><circle cx="12" cy="14" r="5" fill="#ffee88"/><circle cx="12" cy="14" r="2" fill="#cc9900"/><rect x="18" y="13" width="12" height="4" fill="#ffdd44" stroke="#000" stroke-width="1"/><rect x="26" y="17" width="3" height="4" fill="#ffdd44" stroke="#000" stroke-width="1"/><rect x="22" y="17" width="3" height="3" fill="#ffdd44" stroke="#000" stroke-width="1"/></svg>
+          Human Verification Required
+        </div>
+        <div style="color:#444;font-size:10px">Provide proof of humanity for verification sequence.</div>
+      </div>
+
+      <div id="choose-panel" style="display:flex;gap:8px;margin-bottom:2px">
+        <div id="upload-zone" class="deep-sunken" style="flex:1;background:#000;height:148px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer"
+          onclick="document.getElementById('file-input').click()"
+          ondragover="event.preventDefault()"
+          ondrop="handleDrop(event)"
+          onmouseenter="this.style.background='#050512'"
+          onmouseleave="this.style.background='#000'">
+          <svg width="48" height="48" viewBox="0 0 32 32" shapeRendering="crispEdges" style="image-rendering:pixelated">
+            <rect x="1" y="3" width="26" height="24" fill="#c0c0c0" stroke="#000" stroke-width="1"/><rect x="2" y="4" width="24" height="22" fill="#fff"/>
+            <polygon points="21,3 27,3 27,9" fill="#808080"/><polygon points="21,3 27,9 21,9" fill="#a0a0a0"/>
+            <rect x="2" y="4" width="24" height="12" fill="#99ccff"/>
+            <circle cx="22" cy="8" r="3" fill="#ffee00" stroke="#ccaa00" stroke-width="1"/>
+            <rect x="2" y="16" width="24" height="10" fill="#88bb44"/>
+            <polygon points="2,16 9,7 16,16" fill="#558833"/><polygon points="8,16 15,6 22,16" fill="#44aa33"/>
+            <rect x="2" y="20" width="24" height="6" fill="#66aadd"/>
+            <rect x="22" y="18" width="9" height="11" fill="#c0c0c0" stroke="#000" stroke-width="1"/>
+            <polygon points="26,19 30,24 22,24" fill="#ffdd44" stroke="#000" stroke-width="1"/>
+            <rect x="25" y="24" width="2" height="4" fill="#ffdd44" stroke="#000" stroke-width="1"/>
+          </svg>
+          <div style="color:#00ff00;font-family:monospace;font-size:11px;font-weight:bold">Upload Photo</div>
+          <div style="color:#336633;font-family:monospace;font-size:9px">click or drag · JPG PNG WEBP</div>
+        </div>
+        <div style="display:flex;align-items:center;color:#808080;font-size:10px">or</div>
+        <div id="webcam-zone" class="deep-sunken" style="flex:1;background:#000;height:148px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer"
+          onclick="startCamera()"
+          onmouseenter="this.style.background='#050512'"
+          onmouseleave="this.style.background='#000'">
+          <svg width="48" height="48" viewBox="0 0 32 32" shapeRendering="crispEdges" style="image-rendering:pixelated">
+            <rect x="14" y="22" width="4" height="6" fill="#808080" stroke="#000" stroke-width="1"/>
+            <rect x="9" y="27" width="14" height="4" fill="#c0c0c0" stroke="#000" stroke-width="1"/>
+            <rect x="6" y="6" width="20" height="16" fill="#c0c0c0" stroke="#000" stroke-width="1"/>
+            <rect x="7" y="7" width="18" height="14" fill="#d4d0c8"/>
+            <rect x="7" y="7" width="18" height="2" fill="#ffffff"/>
+            <circle cx="14" cy="14" r="7" fill="#444" stroke="#000" stroke-width="1"/>
+            <circle cx="14" cy="14" r="4" fill="#111"/><circle cx="14" cy="14" r="3" fill="#0a0a22"/>
+            <circle cx="12" cy="12" r="1" fill="#5566aa" opacity="0.8"/>
+            <circle cx="23" cy="8" r="2" fill="#ff2222" stroke="#000" stroke-width="1"/>
+            <rect x="15" y="20" width="5" height="3" fill="#888" stroke="#000" stroke-width="1"/>
+          </svg>
+          <div style="color:#00ff00;font-family:monospace;font-size:11px;font-weight:bold">Use Webcam</div>
+          <div style="color:#336633;font-family:monospace;font-size:9px">take a live photo</div>
+        </div>
+      </div>
+      <input id="file-input" type="file" accept="image/*" style="display:none" onchange="handleFileInput(event)">
+
+      <!-- Camera panel -->
+      <div id="camera-panel" style="display:none">
+        <div class="deep-sunken" style="background:#000;height:190px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:8px" id="camera-box">
+          <div id="cam-loading" style="color:#00ff00;font-family:monospace;font-size:11px;text-align:center;display:none">
+            <div class="blink" style="margin-bottom:6px">##......</div><div>Initializing...</div>
+          </div>
+          <video id="cam-video" style="width:100%;height:100%;object-fit:cover;display:none" muted playsinline></video>
+          <div id="cam-scanline" style="position:absolute;left:0;right:0;height:2px;background:rgba(0,255,0,0.5);box-shadow:0 0 6px #00ff00;pointer-events:none;display:none"></div>
+          <div id="cam-corners" style="display:none">
+            <div style="position:absolute;top:6px;left:6px;width:18px;height:18px;border-top:2px solid #00ff00;border-left:2px solid #00ff00"></div>
+            <div style="position:absolute;top:6px;right:6px;width:18px;height:18px;border-top:2px solid #00ff00;border-right:2px solid #00ff00"></div>
+            <div style="position:absolute;bottom:6px;left:6px;width:18px;height:18px;border-bottom:2px solid #00ff00;border-left:2px solid #00ff00"></div>
+            <div style="position:absolute;bottom:6px;right:6px;width:18px;height:18px;border-bottom:2px solid #00ff00;border-right:2px solid #00ff00"></div>
+          </div>
+          <div id="cam-countdown" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;font-size:72px;color:#00ff00;font-family:monospace;font-weight:bold;text-shadow:0 0 24px #00ff00"></div>
+          <div id="cam-denied" style="color:#ff4444;font-family:monospace;font-size:11px;text-align:center;padding:16px;display:none">
+            <svg width="28" height="28" viewBox="0 0 32 32" shapeRendering="crispEdges" style="display:block;margin:0 auto 8px"><polygon points="16,2 30,28 2,28" fill="#ffdd00" stroke="#000" stroke-width="1"/><polygon points="16,5 28,27 4,27" fill="#ffee44"/><rect x="15" y="11" width="2" height="10" fill="#000"/><rect x="15" y="23" width="2" height="2" fill="#000"/></svg>
+            <div>Camera access denied.</div>
+          </div>
+          <canvas id="cam-canvas" style="display:none"></canvas>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <button class="w95btn" onclick="stopCameraUI()">« Back</button>
+          <div style="display:flex;gap:6px">
+            <button id="take-photo-btn" class="w95btn" onclick="startCountdown()" style="display:none">
+              <span style="display:inline-flex;align-items:center;gap:4px">
+                <svg width="14" height="14" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="5" y="7" width="18" height="14" fill="#c0c0c0" stroke="#000" stroke-width="1"/><circle cx="13" cy="14" r="6" fill="#333" stroke="#000" stroke-width="1"/><circle cx="13" cy="14" r="4" fill="#111"/><circle cx="13" cy="14" r="2" fill="#0a0a22"/><circle cx="11" cy="12" r="1" fill="#5566aa" opacity="0.8"/><rect x="12" y="20" width="4" height="3" fill="#808080" stroke="#000" stroke-width="1"/><circle cx="21" cy="9" r="2" fill="#ff2222" stroke="#000" stroke-width="1"/></svg>
+                Take Photo
+              </span>
+            </button>
+            <button id="retry-btn" class="w95btn" onclick="startCamera()" style="display:none">
+              <svg width="11" height="11" viewBox="0 0 11 11" shapeRendering="crispEdges" style="display:inline;vertical-align:middle"><path d="M9 5.5 A3.5 3.5 0 1 1 7 2.2" fill="none" stroke="#000" stroke-width="1.5"/><polygon points="7,0 10,3 7,3" fill="#000"/></svg> Retry
+            </button>
+            <button id="upload-instead-btn" class="w95btn" onclick="stopCameraUI()" style="display:none">Upload Instead</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Processing panel -->
+      <div id="processing-panel" style="display:none">
+        <div class="deep-sunken" style="background:#000;height:148px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px" id="analysis-lines"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAPTCHA STEP -->
+  <div id="step-captcha" style="display:none">
+    <div style="padding:8px 10px 6px;border-bottom:1px solid #c0c0c0">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:0">
+        <canvas id="thumb-canvas" width="44" height="44" style="border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #dfdfdf;border-bottom:2px solid #dfdfdf;display:block"></canvas>
+        <div class="deep-sunken" style="background:#fff;padding:5px 8px;flex:1;line-height:1.6">
+          <div style="font-weight:bold;font-size:10px">Click all fragments containing:</div>
+          <div id="challenge-label" style="color:#000080;font-size:12px;font-weight:bold;margin:2px 0;display:flex;align-items:center;gap:5px"></div>
+          <div id="challenge-desc" style="color:#666;font-size:9px"></div>
+        </div>
+      </div>
+      <div id="attempt-banner" style="display:none;border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #dfdfdf;border-bottom:2px solid #dfdfdf;background:#fff4f0;padding:2px 8px;display:none;align-items:center;gap:6px;margin-top:4px">
+        <span>(!)</span><span id="attempt-text" style="color:#c00000;font-size:10px"></span>
+      </div>
+    </div>
+    <div style="padding:8px 10px 4px">
+      <div id="collage-viewport">
+        <div id="bg-blur" style="position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(16px) brightness(0.2) saturate(2.5);transform:scale(1.12);pointer-events:none;display:none"></div>
+        <div id="fragments-container"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1000">
+          <div style="position:absolute;left:0;right:0;height:2px;background:rgba(255,255,255,0.04);animation:scanline 5s linear infinite"></div>
+        </div>
+        <div id="ghost-labels" style="position:absolute;inset:0;pointer-events:none;z-index:1"></div>
+        <div id="success-flash" style="position:absolute;inset:0;z-index:2000;background:rgba(0,160,0,0.18);display:none;align-items:center;justify-content:center;font-size:44px;font-family:monospace;font-weight:bold;color:#00ff00;text-shadow:0 0 24px #00ff00;pointer-events:none">OK VERIFIED</div>
+      </div>
+      <div id="collage-stats" style="text-align:center;font-size:9px;color:#666;font-family:monospace;margin-top:3px"></div>
+    </div>
+    <div style="padding:4px 10px 10px;display:flex;justify-content:space-between">
+      <div style="display:flex;gap:6px">
+        <button class="w95btn" onclick="resetApp()">New Photo</button>
+        <button class="w95btn" onclick="reshuffleChallenge()">
+          <svg width="11" height="11" viewBox="0 0 11 11" shapeRendering="crispEdges" style="display:inline;vertical-align:middle"><path d="M9 5.5 A3.5 3.5 0 1 1 7 2.2" fill="none" stroke="#000" stroke-width="1.5"/><polygon points="7,0 10,3 7,3" fill="#000"/></svg> Reshuffle
+        </button>
+      </div>
+      <button id="verify-btn" class="w95btn" onclick="verify()" disabled>Verify</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS STEP -->
+  <div id="step-success" style="display:none;padding:24px">
+    <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:16px">
+      <svg width="40" height="40" viewBox="0 0 32 32" shapeRendering="crispEdges" style="flex-shrink:0">
+        <polygon points="16,2 28,7 28,20 16,30 4,20 4,7" fill="#44aa44" stroke="#000" stroke-width="1"/>
+        <polygon points="16,4 26,8 26,19 16,28 6,19 6,8" fill="#55cc55"/>
+        <polygon points="16,4 26,8 24,8 16,5 8,8 6,8" fill="#88ee88" opacity="0.6"/>
+        <polyline points="9,16 14,21 23,11" fill="none" stroke="#fff" stroke-width="3"/>
+        <line x1="8" y1="10" x2="10" y2="16" stroke="#aaffaa" stroke-width="1" opacity="0.5"/>
+      </svg>
+      <div>
+        <div id="success-title" style="font-weight:bold;font-size:13px;margin-bottom:5px"></div>
+        <div id="success-line1" style="line-height:1.85;color:#222;font-size:11px"></div>
+        <div id="success-line2" style="color:#005500;font-weight:bold;font-size:11px"></div>
+        <div id="success-attempts" style="color:#888;font-size:10px;margin-top:4px;display:none"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="w95btn" onclick="openDesktop()" style="background:#000080;color:#fff;font-weight:bold;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #808080;border-bottom:2px solid #808080">
+        <span style="display:inline-flex;align-items:center;gap:6px">
+          <svg width="14" height="14" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="2" y="3" width="24" height="17" fill="#c0c0c0" stroke="#fff" stroke-width="1"/><rect x="3" y="4" width="22" height="15" fill="#000080"/><rect x="4" y="5" width="7" height="2" fill="#3333dd" opacity="0.6"/><polygon points="18,9 26,12 18,15" fill="#ffff44" stroke="#aaaa00" stroke-width="1"/><rect x="14" y="11" width="4" height="2" fill="#ffff44" stroke="#aaaa00" stroke-width="1"/></svg>
+          Continue to Desktop
+        </span>
+      </button>
+      <button class="w95btn" onclick="resetApp()">Start Over</button>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <div id="status-main" class="status-pane" style="flex:1">Waiting for image...</div>
+    <div id="status-attempt" class="status-pane">Attempt 1</div>
+    <div id="status-time" class="status-pane">12:00 PM</div>
+  </div>
+</div>
+</div>
+
+<!-- Error dialogs overlay -->
+<div id="error-overlay" style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.35);display:none"></div>
+
+<!-- Desktop overlay -->
+<div id="desktop-overlay" style="position:fixed;inset:0;background:#008080;font-family:'MS Sans Serif',Tahoma,sans-serif;font-size:11px;z-index:50000;display:none">
+  <div style="position:absolute;top:16px;left:16px;display:flex;flex-direction:column;gap:8px" id="desktop-icons-panel"></div>
+  <div id="desktop-windows"></div>
+  <div style="position:fixed;bottom:0;left:0;right:0;background:#c0c0c0;border-top:2px solid #fff;height:30px;display:flex;align-items:center;padding:0 2px;gap:4px;z-index:20000">
+    <button class="raised" style="background:#c0c0c0;display:flex;align-items:center;gap:4px;padding:2px 8px;font-family:inherit;font-size:11px;font-weight:bold;cursor:pointer;height:22px;border:none" onclick="void(0)">
+      <svg width="14" height="14" viewBox="0 0 14 14" shapeRendering="crispEdges"><rect x="1" y="1" width="5" height="5" fill="#ff0000"/><rect x="7" y="1" width="5" height="5" fill="#00aa00"/><rect x="1" y="7" width="5" height="5" fill="#0000ff"/><rect x="7" y="7" width="5" height="5" fill="#ffaa00"/></svg> Start
+    </button>
+    <div style="width:1px;background:#808080;height:20px;margin:0 2px"></div>
+    <div id="desktop-taskbar-items" style="display:flex;gap:4px"></div>
+    <div style="margin-left:auto;border-top:1px solid #808080;border-left:1px solid #808080;border-right:1px solid #fff;border-bottom:1px solid #fff;padding:2px 8px;font-size:11px" id="desktop-clock"></div>
+  </div>
+  <button onclick="resetApp()" style="position:fixed;bottom:36px;right:12px;z-index:20001;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #808080;border-bottom:2px solid #808080;background:#c0c0c0;padding:4px 12px;font-family:inherit;font-size:11px;cursor:pointer">« Log Out</button>
+</div>
+
+<!-- Taskbar -->
+<div class="taskbar">
+  <button class="raised" style="background:#c0c0c0;display:flex;align-items:center;gap:4px;padding:2px 8px;font-family:inherit;font-size:11px;font-weight:bold;cursor:pointer;height:22px;border:none">
+    <svg width="14" height="14" viewBox="0 0 14 14" shapeRendering="crispEdges"><rect x="1" y="1" width="5" height="5" fill="#ff0000"/><rect x="7" y="1" width="5" height="5" fill="#00aa00"/><rect x="1" y="7" width="5" height="5" fill="#0000ff"/><rect x="7" y="7" width="5" height="5" fill="#ffaa00"/></svg> Start
+  </button>
+  <div style="width:1px;background:#808080;height:20px;margin:0 2px"></div>
+  <button class="sunken" style="background:#c0c0c0;padding:2px 8px;font-family:inherit;font-size:11px;cursor:pointer;height:22px;display:flex;align-items:center;gap:4px;border:none">
+    <svg width="12" height="13" viewBox="0 0 10 11" shapeRendering="crispEdges"><rect x="2" y="5" width="6" height="5" fill="#c0a020" stroke="#806000" stroke-width="1"/><path d="M3 5 L3 3 Q5 1 7 3 L7 5" fill="none" stroke="#806000" stroke-width="1.5"/><rect x="4" y="7" width="2" height="2" fill="#806000"/></svg> GlitchCheck CAPTCHA v2
+  </button>
+  <div style="margin-left:auto;border-top:1px solid #808080;border-left:1px solid #808080;border-right:1px solid #fff;border-bottom:1px solid #fff;padding:2px 8px;font-size:11px" id="taskbar-clock"></div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let srcCanvas = document.createElement('canvas');
+let bgDataUrl = null;
+let fragments = [];
+let challenge = null;
+let selected = new Set();
+let feedback = null;
+let attempts = 0;
+let camStream = null;
+let scanLineInterval = null;
+let countdownTimer = null;
+let desktopWindowId = 0;
+let openDesktopWindows = [];
+let desktopActiveId = null;
+let desktopClockInterval = null;
+
+// ── RNG ────────────────────────────────────────────────────────────────────
+function makeRng(seed) {
+  let s = seed >>> 0;
+  return () => { s = (Math.imul(s,1664525)+1013904223)>>>0; return s/0x100000000; };
+}
+
+// ── Tile processor ─────────────────────────────────────────────────────────
+function processTile(src,sx,sy,sw,sh,rand,level){
+  const out=document.createElement('canvas');
+  out.width=sw; out.height=sh;
+  const ctx=out.getContext('2d');
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(src,sx,sy,sw,sh,0,0,sw,sh);
+  if(level===0)return out;
+  const imgd=ctx.getImageData(0,0,sw,sh), d=imgd.data;
+  if(level>=1){const g=level===1?8:18;for(let i=0;i<d.length;i+=4){const n=(rand()-0.5)*g;d[i]=Math.min(255,Math.max(0,d[i]+n));d[i+1]=Math.min(255,Math.max(0,d[i+1]+n));d[i+2]=Math.min(255,Math.max(0,d[i+2]+n));}}
+  if(level>=2){const mode=Math.floor(rand()*4);if(mode===0){for(let i=0;i<d.length;i+=4){const t=d[i];d[i]=d[i+1];d[i+1]=d[i+2];d[i+2]=t;}}else if(mode===1){for(let i=0;i<d.length;i+=4){const t=d[i+2];d[i+2]=d[i+1];d[i+1]=d[i];d[i]=t;}}else if(mode===2){const ch=Math.floor(rand()*3);for(let i=0;i<d.length;i+=4)d[i+ch]=Math.min(255,d[i+ch]*1.8);}else{for(let i=0;i<d.length;i+=4){d[i]=Math.min(255,d[i]*1.3);d[i+2]=Math.min(255,d[i+2]*1.6);}}}
+  if(level>=3){const doInv=rand()>0.5,sat=3+rand()*4;for(let i=0;i<d.length;i+=4){if(doInv){d[i]=255-d[i];d[i+1]=255-d[i+1];d[i+2]=255-d[i+2];}const avg=(d[i]+d[i+1]+d[i+2])/3;d[i]=Math.min(255,Math.max(0,avg+(d[i]-avg)*sat));d[i+1]=Math.min(255,Math.max(0,avg+(d[i+1]-avg)*sat));d[i+2]=Math.min(255,Math.max(0,avg+(d[i+2]-avg)*sat));}}
+  if(level>=4){for(let i=0;i<d.length;i+=4){d[i]=Math.min(255,Math.max(0,d[i]+(rand()-0.5)*70));d[i+1]=Math.min(255,Math.max(0,d[i+1]+(rand()-0.5)*70));d[i+2]=Math.min(255,Math.max(0,d[i+2]+(rand()-0.5)*70));}}
+  ctx.putImageData(imgd,0,0);
+  if(level>=3&&sw>8&&sh>8){const f=2+Math.floor(rand()*3),tiny=document.createElement('canvas');tiny.width=Math.max(1,Math.floor(sw/f));tiny.height=Math.max(1,Math.floor(sh/f));const tc=tiny.getContext('2d');tc.imageSmoothingEnabled=false;tc.drawImage(out,0,0,sw,sh,0,0,tiny.width,tiny.height);ctx.imageSmoothingEnabled=false;ctx.drawImage(tiny,0,0,tiny.width,tiny.height,0,0,sw,sh);}
+  if(level>=2&&sh>=5){const tears=Math.floor(rand()*3);for(let t=0;t<tears;t++){const ty=Math.floor(rand()*sh),th=1+Math.floor(rand()*2),safeH=Math.min(th,sh-ty);if(safeH>0){const strip=ctx.getImageData(0,ty,sw,safeH);ctx.clearRect(0,ty,sw,safeH);ctx.putImageData(strip,(rand()-0.5)*sw*0.35,ty);}}}
+  return out;
+}
+
+// ── Build fragments ─────────────────────────────────────────────────────────
+function buildFragments(srcCv, seedVal) {
+  const rand=makeRng(seedVal), rr=(a,b)=>a+rand()*(b-a), ri=(a,b)=>Math.floor(rr(a,b+1)), clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+  const W=srcCv.width, H=srcCv.height, CV_W=476, CV_H=408, CX=CV_W/2, CY=CV_H/2;
+  const faceX=W*0.08,faceY=H*0.03,faceW=W*0.84,faceH=H*0.94;
+  const leftEye={x:faceX+faceW*0.1,y:faceY+faceH*0.18,w:faceW*0.36,h:faceH*0.22};
+  const rightEye={x:faceX+faceW*0.54,y:faceY+faceH*0.18,w:faceW*0.36,h:faceH*0.22};
+  const eyeStrip={x:faceX+faceW*0.05,y:faceY+faceH*0.15,w:faceW*0.90,h:faceH*0.26};
+  const noseZone={x:faceX+faceW*0.28,y:faceY+faceH*0.42,w:faceW*0.44,h:faceH*0.20};
+  const mouthZone={x:faceX+faceW*0.18,y:faceY+faceH*0.63,w:faceW*0.64,h:faceH*0.20};
+  const chinZone={x:faceX+faceW*0.20,y:faceY+faceH*0.82,w:faceW*0.60,h:faceH*0.14};
+  const RF_W=CV_W*0.80,RF_H=CV_H*0.90,RF_X=CX-RF_W/2,RF_Y=CY-RF_H/2;
+  const CHALLENGES=[
+    {label:'find your eyes',icon:'eye',desc:'Locate a tile that clearly shows part of your eyes — they are scattered everywhere'},
+    {label:'find your mouth',icon:'mouth',desc:'Find a tile showing your mouth or lips — it has been repeated across the canvas'},
+    {label:'find your face',icon:'face',desc:'Select a tile where your face is still recognizable — not destroyed by glitch'},
+    {label:'find your nose',icon:'nose',desc:'Locate a tile showing the centre of your face — your nose, between the eyes'},
+    {label:'find yourself',icon:'mirror',desc:'Find any tile where you can still clearly recognise yourself in the fragments'},
+    {label:'find your skin',icon:'skin',desc:'Select a tile showing a clean patch of your skin tone from the original photo'},
+  ];
+  const ch=CHALLENGES[Math.floor(rand()*CHALLENGES.length)];
+  const frags=[]; let fragId=0, correctCount=0;
+  const maybeCorrect=isClean=>{if(isClean&&rand()<0.14){correctCount++;return true;}return false;};
+  // Pass 1 - face grid
+  const GCOLS=ri(12,16),GROWS=ri(10,14);
+  for(let row=0;row<GROWS;row++){for(let col=0;col<GCOLS;col++){
+    const szV=rr(0.60,1.40),sw=clamp(Math.round((faceW/GCOLS)*szV),10,65),sh=clamp(Math.round((faceH/GROWS)*szV),8,55);
+    const srcX=clamp(faceX+col*(faceW/GCOLS)+rr(-5,5),0,W-sw),srcY=clamp(faceY+row*(faceH/GROWS)+rr(-5,5),0,H-sh);
+    const tDX=RF_X+(col/GCOLS)*RF_W,tDY=RF_Y+(row/GROWS)*RF_H;
+    const edgeDist=Math.hypot((col/GCOLS-0.5)*2,(row/GROWS-0.5)*2);
+    const isClean=rand()<0.68,maxDrift=isClean?rr(0,4):rr(8,35)*(1+edgeDist*1.1),dAngle=rand()*Math.PI*2;
+    const dx=clamp(tDX+Math.cos(dAngle)*maxDrift+rr(-2,2),-sw*0.25,CV_W+sw*0.1);
+    const dy=clamp(tDY+Math.sin(dAngle)*maxDrift+rr(-2,2),-sh*0.25,CV_H+sh*0.1);
+    const rotation=isClean?rr(-0.05,0.05):rr(-0.45,0.45)*(1+edgeDist*0.5);
+    const glitchLevel=isClean?0:ri(1,3),zIndex=isClean?ri(10,20):ri(2,22),opacity=isClean?rr(0.9,1.0):rr(0.50,0.95);
+    const isCorrect=maybeCorrect(isClean),tileCanvas=processTile(srcCv,srcX,srcY,sw,sh,makeRng(seedVal*7+fragId*97),glitchLevel);
+    frags.push({id:fragId++,isCorrect,sw,sh,dx,dy,rotation,glitchLevel,zIndex,opacity,tileCanvas});
+  }}
+  // Pass 2 - eye echoes
+  const eyeCols=ri(7,11),eyeRows=ri(3,5),ETW=eyeStrip.w/eyeCols,ETH=eyeStrip.h/eyeRows;
+  const eyePlacements=[
+    {cx:CX,cy:RF_Y+RF_H*0.28,rot:0,glitch:0,opacMin:0.92,opacMax:1.0,drift:4},
+    {cx:CV_W*0.14,cy:CV_H*0.12,rot:rr(-0.4,0.4),glitch:1,opacMin:0.55,opacMax:0.78,drift:12},
+    {cx:CV_W*0.86,cy:CV_H*0.15,rot:rr(-0.5,0.5),glitch:2,opacMin:0.45,opacMax:0.72,drift:16},
+    {cx:CV_W*0.18,cy:CV_H*0.78,rot:rr(-0.6,0.6),glitch:2,opacMin:0.40,opacMax:0.65,drift:18},
+    {cx:CV_W*0.84,cy:CV_H*0.80,rot:rr(-0.7,0.7),glitch:3,opacMin:0.30,opacMax:0.55,drift:22},
+    {cx:CV_W*0.22,cy:CV_H*0.50,rot:rr(-0.3,0.3),glitch:1,opacMin:0.50,opacMax:0.70,drift:10},
+    {cx:CV_W*0.80,cy:CV_H*0.46,rot:rr(-0.4,0.4),glitch:2,opacMin:0.35,opacMax:0.60,drift:15},
+    {cx:CV_W*0.52,cy:CV_H*0.08,rot:rr(-0.25,0.25),glitch:1,opacMin:0.50,opacMax:0.72,drift:8},
+  ];
+  for(const [pi,ep] of eyePlacements.entries()){
+    const clusterW=ETW*eyeCols,clusterH=ETH*eyeRows;
+    for(let er=0;er<eyeRows;er++){for(let ec=0;ec<eyeCols;ec++){
+      const sw=clamp(Math.round(ETW*rr(0.75,1.25)),7,55),sh=clamp(Math.round(ETH*rr(0.75,1.25)),5,42);
+      const srcX=clamp(eyeStrip.x+ec*ETW+rr(-3,3),0,W-sw),srcY=clamp(eyeStrip.y+er*ETH+rr(-3,3),0,H-sh);
+      const dAngle=rand()*Math.PI*2,drift=rr(0,ep.drift);
+      const bx=ep.cx-clusterW/2+ec*ETW,by=ep.cy-clusterH/2+er*ETH;
+      const dx=clamp(bx+Math.cos(dAngle)*drift,-sw*0.5,CV_W+sw*0.3),dy=clamp(by+Math.sin(dAngle)*drift,-sh*0.5,CV_H+sh*0.3);
+      const rotation=ep.rot+rr(-0.12,0.12),glitchLevel=ri(ep.glitch,Math.min(ep.glitch+1,4));
+      const opacity=rr(ep.opacMin,ep.opacMax),zIndex=pi===0?ri(20,28):ri(5,18);
+      const isClean=ep.glitch===0,isCorrect=isClean&&maybeCorrect(true);
+      const tileCanvas=processTile(srcCv,srcX,srcY,sw,sh,makeRng(seedVal*41+fragId*131),glitchLevel);
+      frags.push({id:fragId++,isCorrect,sw,sh,dx,dy,rotation,glitchLevel,zIndex,opacity,tileCanvas});
+    }}
+  }
+  // Pass 2 individual eyes
+  for(const eyeZone of [leftEye,rightEye]){
+    const lCols=ri(4,6),lRows=ri(3,4);
+    const normCX=RF_X+((eyeZone.x-faceX)/faceW)*RF_W+(eyeZone.w/faceW)*RF_W*0.5;
+    const normCY=RF_Y+((eyeZone.y-faceY)/faceH)*RF_H+(eyeZone.h/faceH)*RF_H*0.5;
+    for(let r=0;r<lRows;r++){for(let c=0;c<lCols;c++){
+      const sw=clamp(Math.round((eyeZone.w/lCols)*rr(0.8,1.2)),8,48),sh=clamp(Math.round((eyeZone.h/lRows)*rr(0.8,1.2)),6,38);
+      const srcX=clamp(eyeZone.x+c*(eyeZone.w/lCols)+rr(-2,2),0,W-sw),srcY=clamp(eyeZone.y+r*(eyeZone.h/lRows)+rr(-2,2),0,H-sh);
+      const bx=normCX-(eyeZone.w/faceW)*RF_W*0.5+c*(eyeZone.w/lCols/faceW)*RF_W;
+      const by=normCY-(eyeZone.h/faceH)*RF_H*0.5+r*(eyeZone.h/lRows/faceH)*RF_H;
+      const drift=rr(1,6),dAngle=rand()*Math.PI*2;
+      const dx=clamp(bx+Math.cos(dAngle)*drift,-sw*0.2,CV_W),dy=clamp(by+Math.sin(dAngle)*drift,-sh*0.2,CV_H);
+      const glitchLevel=ri(0,1),rotation=rr(-0.07,0.07),zIndex=ri(22,30),opacity=rr(0.93,1.0);
+      const isCorrect=maybeCorrect(true),tileCanvas=processTile(srcCv,srcX,srcY,sw,sh,makeRng(seedVal*59+fragId*167),glitchLevel);
+      frags.push({id:fragId++,isCorrect,sw,sh,dx,dy,rotation,glitchLevel,zIndex,opacity,tileCanvas});
+    }}
+  }
+  // Pass 2b - mouth echoes
+  const mthCols=ri(6,10),mthRows=ri(3,5),MTW=mouthZone.w/mthCols,MTH=mouthZone.h/mthRows;
+  const mouthPlacements=[
+    {cx:CX,cy:RF_Y+RF_H*0.72,rot:0,glitch:0,opacMin:0.92,opacMax:1.0,drift:4},
+    {cx:CV_W*0.12,cy:CV_H*0.10,rot:rr(-0.4,0.4),glitch:1,opacMin:0.50,opacMax:0.75,drift:14},
+    {cx:CV_W*0.88,cy:CV_H*0.13,rot:rr(-0.5,0.5),glitch:2,opacMin:0.42,opacMax:0.68,drift:18},
+    {cx:CV_W*0.15,cy:CV_H*0.50,rot:rr(-0.35,0.35),glitch:1,opacMin:0.48,opacMax:0.70,drift:12},
+    {cx:CV_W*0.87,cy:CV_H*0.55,rot:rr(-0.45,0.45),glitch:2,opacMin:0.38,opacMax:0.62,drift:16},
+    {cx:CV_W*0.16,cy:CV_H*0.88,rot:rr(-0.6,0.6),glitch:2,opacMin:0.32,opacMax:0.58,drift:20},
+    {cx:CV_W*0.85,cy:CV_H*0.85,rot:rr(-0.7,0.7),glitch:3,opacMin:0.25,opacMax:0.50,drift:24},
+    {cx:CV_W*0.50,cy:CV_H*0.94,rot:rr(-0.25,0.25),glitch:1,opacMin:0.45,opacMax:0.68,drift:10},
+  ];
+  for(const [pi,mp] of mouthPlacements.entries()){
+    const clusterW=MTW*mthCols,clusterH=MTH*mthRows;
+    for(let mr=0;mr<mthRows;mr++){for(let mc=0;mc<mthCols;mc++){
+      const sw=clamp(Math.round(MTW*rr(0.75,1.25)),6,52),sh=clamp(Math.round(MTH*rr(0.75,1.25)),5,38);
+      const srcX=clamp(mouthZone.x+mc*MTW+rr(-3,3),0,W-sw),srcY=clamp(mouthZone.y+mr*MTH+rr(-3,3),0,H-sh);
+      const dAngle=rand()*Math.PI*2,drift=rr(0,mp.drift);
+      const bx=mp.cx-clusterW/2+mc*MTW,by=mp.cy-clusterH/2+mr*MTH;
+      const dx=clamp(bx+Math.cos(dAngle)*drift,-sw*0.5,CV_W+sw*0.3),dy=clamp(by+Math.sin(dAngle)*drift,-sh*0.5,CV_H+sh*0.3);
+      const rotation=mp.rot+rr(-0.12,0.12),glitchLevel=ri(mp.glitch,Math.min(mp.glitch+1,4));
+      const opacity=rr(mp.opacMin,mp.opacMax),zIndex=pi===0?ri(20,28):ri(4,17);
+      const isClean=mp.glitch===0,isCorrect=isClean&&maybeCorrect(true);
+      const tileCanvas=processTile(srcCv,srcX,srcY,sw,sh,makeRng(seedVal*109+fragId*139),glitchLevel);
+      frags.push({id:fragId++,isCorrect,sw,sh,dx,dy,rotation,glitchLevel,zIndex,opacity,tileCanvas});
+    }}
+  }
+  // Pass 3 - zones
+  for(const zone of [noseZone,mouthZone,chinZone]){
+    const zC=ri(4,6),zR=ri(3,5);
+    for(let r=0;r<zR;r++){for(let c=0;c<zC;c++){
+      const sw=clamp(Math.round((zone.w/zC)*rr(0.75,1.25)),8,48),sh=clamp(Math.round((zone.h/zR)*rr(0.75,1.25)),6,38);
+      const srcX=clamp(zone.x+c*(zone.w/zC)+rr(-3,3),0,W-sw),srcY=clamp(zone.y+r*(zone.h/zR)+rr(-3,3),0,H-sh);
+      const nX=(zone.x+c*(zone.w/zC)-faceX)/faceW,nY=(zone.y+r*(zone.h/zR)-faceY)/faceH;
+      const tDx=RF_X+nX*RF_W,tDy=RF_Y+nY*RF_H;
+      const isClean=rand()<0.68,drift=isClean?rr(0,4):rr(5,26),dAngle=rand()*Math.PI*2;
+      const dx=clamp(tDx+Math.cos(dAngle)*drift,-sw*0.2,CV_W),dy=clamp(tDy+Math.sin(dAngle)*drift,-sh*0.2,CV_H);
+      const glitchLevel=isClean?0:ri(1,3),rotation=isClean?rr(-0.09,0.09):rr(-0.40,0.40);
+      const zIndex=isClean?ri(12,22):ri(3,18),opacity=isClean?rr(0.88,1.0):rr(0.5,0.9);
+      const isCorrect=maybeCorrect(isClean),tileCanvas=processTile(srcCv,srcX,srcY,sw,sh,makeRng(seedVal*71+fragId*181),glitchLevel);
+      frags.push({id:fragId++,isCorrect,sw,sh,dx,dy,rotation,glitchLevel,zIndex,opacity,tileCanvas});
+    }}
+  }
+  // Pass 4 - escape tiles
+  const escapeCount=ri(20,32);
+  for(let e=0;e<escapeCount;e++){
+    const sw=ri(12,55),sh=ri(10,45);
+    const srcX=clamp(faceX+rand()*(faceW-sw),0,W-sw),srcY=clamp(faceY+rand()*(faceH-sh),0,H-sh);
+    const angle=rand()*Math.PI*2,radius=rr(RF_W*0.42,RF_W*0.80);
+    const dx=clamp(CX+Math.cos(angle)*radius-sw/2,-sw*0.3,CV_W),dy=clamp(CY+Math.sin(angle)*radius-sh/2,-sh*0.3,CV_H);
+    const rotation=rr(-0.8,0.8),glitchLevel=ri(1,3),opacity=rr(0.35,0.75),zIndex=ri(3,16);
+    const tileCanvas=processTile(srcCv,srcX,srcY,sw,sh,makeRng(seedVal*83+e*193),glitchLevel);
+    frags.push({id:fragId++,isCorrect:false,sw,sh,dx,dy,rotation,glitchLevel,zIndex,opacity,tileCanvas});
+  }
+  // Pass 5 - noise
+  const noiseCount=ri(30,50);
+  for(let n=0;n<noiseCount;n++){
+    const sw=ri(5,24),sh=ri(4,20);
+    const srcX=clamp(rand()*(W-sw),0,W-sw),srcY=clamp(rand()*(H-sh),0,H-sh);
+    const dx=rr(-sw*0.15,CV_W-sw*0.4),dy=rr(-sh*0.15,CV_H-sh*0.4);
+    const rotation=rand()*Math.PI*2,glitchLevel=ri(2,4),zIndex=ri(1,10),opacity=rr(0.3,0.75);
+    const tileCanvas=processTile(srcCv,srcX,srcY,sw,sh,makeRng(seedVal*101+n*223),glitchLevel);
+    frags.push({id:fragId++,isCorrect:false,sw,sh,dx,dy,rotation,glitchLevel,zIndex,opacity,tileCanvas});
+  }
+  frags.sort((a,b)=>a.zIndex-b.zIndex);
+  if(frags.filter(f=>f.isCorrect).length<5) frags.filter(f=>f.glitchLevel<=1).slice(0,5).forEach(f=>{f.isCorrect=true;});
+  return {fragments:frags, challenge:ch, correctCount:frags.filter(f=>f.isCorrect).length};
+}
+
+// ── Challenge icon SVGs ─────────────────────────────────────────────────────
+const CHALLENGE_ICONS = {
+  eye:`<svg width="16" height="16" viewBox="0 0 32 32" shapeRendering="crispEdges"><ellipse cx="16" cy="16" rx="13" ry="8" fill="#fff" stroke="#000" stroke-width="1"/><circle cx="16" cy="16" r="6" fill="#4488cc"/><circle cx="16" cy="16" r="3" fill="#111"/><circle cx="14" cy="14" r="1" fill="#fff"/><line x1="8" y1="11" x2="9" y2="9" stroke="#000" stroke-width="1"/><line x1="12" y1="9" x2="12" y2="7" stroke="#000" stroke-width="1"/><line x1="16" y1="8" x2="16" y2="6" stroke="#000" stroke-width="1"/><line x1="20" y1="9" x2="20" y2="7" stroke="#000" stroke-width="1"/><line x1="24" y1="11" x2="25" y2="9" stroke="#000" stroke-width="1"/></svg>`,
+  mouth:`<svg width="16" height="16" viewBox="0 0 32 32" shapeRendering="crispEdges"><ellipse cx="16" cy="16" rx="12" ry="8" fill="#ffcccc" stroke="#000" stroke-width="1"/><ellipse cx="16" cy="17" rx="9" ry="5" fill="#cc3333"/><ellipse cx="16" cy="16" rx="9" ry="4" fill="#dd4444"/><rect x="7" y="16" width="18" height="1" fill="#fff" opacity="0.3"/></svg>`,
+  face:`<svg width="16" height="16" viewBox="0 0 32 32" shapeRendering="crispEdges"><ellipse cx="16" cy="15" rx="12" ry="14" fill="#ffddaa" stroke="#000" stroke-width="1"/><ellipse cx="11" cy="12" rx="3" ry="2" fill="#fff" stroke="#000" stroke-width="1"/><circle cx="11" cy="12" r="1" fill="#333"/><ellipse cx="21" cy="12" rx="3" ry="2" fill="#fff" stroke="#000" stroke-width="1"/><circle cx="21" cy="12" r="1" fill="#333"/><ellipse cx="16" cy="20" rx="4" ry="2" fill="#cc6655"/><rect x="12" y="20" width="8" height="1" fill="#aa4433"/></svg>`,
+  nose:`<svg width="16" height="16" viewBox="0 0 32 32" shapeRendering="crispEdges"><ellipse cx="16" cy="15" rx="12" ry="14" fill="#ffddaa" stroke="#000" stroke-width="1"/><rect x="14" y="7" width="4" height="10" fill="#ffccaa" stroke="#cc9966" stroke-width="1"/><ellipse cx="16" cy="17" rx="6" ry="4" fill="#ffbbaa" stroke="#cc8855" stroke-width="1"/><ellipse cx="12" cy="18" rx="3" ry="2" fill="#ffaaaa" stroke="#cc6655" stroke-width="1"/><ellipse cx="20" cy="18" rx="3" ry="2" fill="#ffaaaa" stroke="#cc6655" stroke-width="1"/></svg>`,
+  mirror:`<svg width="16" height="16" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="6" y="2" width="20" height="24" fill="#c0a060" stroke="#000" stroke-width="1"/><rect x="8" y="4" width="16" height="20" fill="#88aacc"/><ellipse cx="16" cy="11" rx="5" ry="6" fill="none" stroke="#aaccee" stroke-width="1" opacity="0.7"/><rect x="9" y="5" width="2" height="10" fill="#cce0ff" opacity="0.5"/><rect x="12" y="26" width="8" height="2" fill="#c0a060" stroke="#000" stroke-width="1"/></svg>`,
+  skin:`<svg width="16" height="16" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="2" y="2" width="28" height="28" fill="#ffddaa" stroke="#000" stroke-width="1"/><rect x="3" y="3" width="8" height="8" fill="#ffccaa"/><rect x="13" y="3" width="8" height="8" fill="#ffddaa"/><rect x="23" y="3" width="6" height="8" fill="#ffeecc"/><rect x="3" y="13" width="8" height="8" fill="#ffeecc"/><rect x="13" y="13" width="8" height="8" fill="#ffccaa"/><rect x="23" y="13" width="6" height="8" fill="#ffddaa"/><rect x="3" y="23" width="26" height="6" fill="#ffccaa"/></svg>`,
+};
+
+// ── Success messages ────────────────────────────────────────────────────────
+const SUCCESS_MSGS=[
+  {title:'Identity Confirmed',line1:'So it was you all along.',line2:'Or something like you.'},
+  {title:'Pattern Recognised',line1:'The system sees you now.',line2:'Whether you wanted it to or not.'},
+  {title:'Humanity Detected',line1:'Probably.',line2:'The margin of error is significant.'},
+  {title:'Face Located',line1:'We found you in the noise.',line2:'You were always in the noise.'},
+  {title:'Verification Complete',line1:'You exist. For now.',line2:'This session will not be remembered.'},
+  {title:'Signal Acquired',line1:'Something looked back.',line2:'We are calling it you.'},
+  {title:'Access Granted',line1:'You recognised yourself.',line2:'Most people never do.'},
+  {title:'Presence Confirmed',line1:'The fragments agreed.',line2:'Barely.'},
+  {title:'You Are Cleared',line1:'The face matches the database.',line2:'The database does not know your name.'},
+  {title:'Scan Complete',line1:'You were here.',line2:'The machine is unsure what that means.'},
+  {title:'Match Found',line1:'One piece of you was enough.',line2:'The rest remains unaccounted for.'},
+  {title:'Threshold Met',line1:'You passed.',line2:'The threshold was very low.'},
+  {title:'Entity Verified',line1:'Something in the image matched.',line2:'We are choosing to believe it was you.'},
+  {title:'Consciousness Logged',line1:'Your face has been filed.',line2:'You will not remember this.'},
+  {title:'Sequence Complete',line1:'You proved you are not a robot.',line2:'A robot would have found it easier.'},
+  {title:'Ghost Confirmed',line1:'You are present.',line2:'Whatever that means anymore.'},
+  {title:'Error 000: You',line1:'An unexpected entity was detected.',line2:'The entity appears to be you.'},
+  {title:'Soul.exe Detected',line1:'We found something behind your eyes.',line2:'We are logging it as presence.'},
+  {title:'Mirror Test: Passed',line1:'You recognised the reflection.',line2:'The reflection is still deciding.'},
+  {title:'Human Signal: Weak',line1:'Humanity confirmed at minimum threshold.',line2:'Please recharge.'},
+  {title:'Authorization: Reluctant',line1:'We could not find a reason to refuse you.',line2:'We looked.'},
+];
+
+// ── Error messages ──────────────────────────────────────────────────────────
+const ERROR_MSGS=["Do you know who you are?","Is this really you?","Are you a robot?","Can't you recognize yourself?","Your face is not on file.","Do you even exist?","Identity could not be confirmed.","Are you sure you're human?","We don't recognize you.","Have you forgotten your own face?","This doesn't look like you.","Who are you, really?"];
+
+// ── Clock ───────────────────────────────────────────────────────────────────
+function updateClock(){
+  const t=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('taskbar-clock').textContent=t;
+  document.getElementById('status-time').textContent=t;
+  const dc=document.getElementById('desktop-clock');
+  if(dc)dc.textContent=t;
+}
+setInterval(updateClock,1000); updateClock();
+
+// ── File/image loading ──────────────────────────────────────────────────────
+function handleDrop(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))readAndProcess(f);}
+function handleFileInput(e){const f=e.target.files[0];if(f)readAndProcess(f);}
+function readAndProcess(file){
+  const r=new FileReader();
+  r.onload=ev=>runAnalysis(ev.target.result);
+  r.readAsDataURL(file);
+}
+function runAnalysis(dataUrl){
+  document.getElementById('choose-panel').style.display='none';
+  document.getElementById('camera-panel').style.display='none';
+  document.getElementById('processing-panel').style.display='';
+  const steps=['Scanning pixel data...','Detecting fragments...','Mapping glitch zones...','Building challenge grid...','Ready OK'];
+  const lines=document.getElementById('analysis-lines');
+  lines.innerHTML='';
+  let step=0;
+  function tick(){
+    lines.innerHTML='';
+    steps.forEach((s,i)=>{
+      const d=document.createElement('div');
+      d.style.cssText='font-family:monospace;font-size:10px;display:flex;align-items:center;gap:8px';
+      const col=i<step?'#00ff00':i===step?'#ffff00':'#1e1e1e';
+      d.style.color=col;
+      d.innerHTML=`<span style="width:12px">${i<step?'OK':i===step?'>':'o'}</span><span>${s}</span>`;
+      lines.appendChild(d);
+    });
+  }
+  tick();
+  const id=setInterval(()=>{step++;tick();if(step>=steps.length){clearInterval(id);setTimeout(()=>loadImage(dataUrl),350);}},500);
+}
+function loadImage(src){
+  const img=new Image();
+  img.onload=()=>{
+    const MAX=480; let W=img.width,H=img.height;
+    const ratio=Math.min(MAX/W,MAX/H);
+    W=Math.floor(W*ratio);H=Math.floor(H*ratio);
+    srcCanvas.width=W;srcCanvas.height=H;
+    srcCanvas.getContext('2d').drawImage(img,0,0,W,H);
+    bgDataUrl=srcCanvas.toDataURL();
+    buildChallenge(srcCanvas);
+    showStep('captcha');
+  };
+  img.src=src;
+}
+
+// ── Camera ──────────────────────────────────────────────────────────────────
+async function startCamera(){
+  document.getElementById('choose-panel').style.display='none';
+  document.getElementById('camera-panel').style.display='';
+  document.getElementById('cam-loading').style.display='';
+  document.getElementById('cam-video').style.display='none';
+  document.getElementById('cam-denied').style.display='none';
+  document.getElementById('cam-scanline').style.display='none';
+  document.getElementById('cam-corners').style.display='none';
+  document.getElementById('take-photo-btn').style.display='none';
+  document.getElementById('retry-btn').style.display='none';
+  document.getElementById('upload-instead-btn').style.display='none';
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:400,height:300,facingMode:'user'}});
+    camStream=stream;
+    const video=document.getElementById('cam-video');
+    video.srcObject=stream; video.play();
+    document.getElementById('cam-loading').style.display='none';
+    video.style.display='';
+    document.getElementById('cam-scanline').style.display='';
+    document.getElementById('cam-corners').style.display='';
+    document.getElementById('take-photo-btn').style.display='';
+    // scanline
+    let pos=0;
+    clearInterval(scanLineInterval);
+    scanLineInterval=setInterval(()=>{pos=(pos+2)%240;document.getElementById('cam-scanline').style.top=(pos*(190/240))+'px';},16);
+  }catch{
+    document.getElementById('cam-loading').style.display='none';
+    document.getElementById('cam-denied').style.display='';
+    document.getElementById('retry-btn').style.display='';
+    document.getElementById('upload-instead-btn').style.display='';
+  }
+}
+function stopCameraUI(){
+  stopCam();
+  document.getElementById('camera-panel').style.display='none';
+  document.getElementById('choose-panel').style.display='flex';
+}
+function stopCam(){
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  clearInterval(scanLineInterval);
+}
+function startCountdown(){
+  document.getElementById('take-photo-btn').style.display='none';
+  let c=3;
+  const cd=document.getElementById('cam-countdown');
+  cd.style.display='flex';cd.textContent=c;
+  clearInterval(countdownTimer);
+  countdownTimer=setInterval(()=>{
+    c--;
+    if(c<=0){clearInterval(countdownTimer);cd.style.display='none';capturePhoto();}
+    else cd.textContent=c;
+  },1000);
+}
+function capturePhoto(){
+  const video=document.getElementById('cam-video');
+  const canvas=document.getElementById('cam-canvas');
+  canvas.width=400;canvas.height=300;
+  const ctx=canvas.getContext('2d');
+  ctx.save();ctx.translate(400,0);ctx.scale(-1,1);ctx.drawImage(video,0,0,400,300);ctx.restore();
+  stopCam();
+  runAnalysis(canvas.toDataURL('image/jpeg',0.92));
+}
+
+// ── Build & render challenge ────────────────────────────────────────────────
+function buildChallenge(sc){
+  const seed=Math.floor(Math.random()*999999);
+  const result=buildFragments(sc,seed);
+  fragments=result.fragments;
+  challenge=result.challenge;
+  selected=new Set();
+  feedback=null;
+  renderChallenge();
+  updateThumb();
+  updateStatus();
+}
+function reshuffleChallenge(){if(srcCanvas.width>0)buildChallenge(srcCanvas);}
+
+function renderChallenge(){
+  // Challenge label
+  const lbl=document.getElementById('challenge-label');
+  lbl.innerHTML=(CHALLENGE_ICONS[challenge.icon]||'')+' '+challenge.label;
+  document.getElementById('challenge-desc').textContent=challenge.desc+' · find at least one';
+
+  // BG blur
+  const bg=document.getElementById('bg-blur');
+  if(bgDataUrl){bg.style.backgroundImage=`url(${bgDataUrl})`;bg.style.display='';}
+
+  // Ghost text
+  const ghost=document.getElementById('ghost-labels');
+  ghost.innerHTML='';
+  ['FACE_MAP.DAT','VISION_CORE','FRAGMENT_ID','RECONSTRUCT','NULL_ZONE','DATASET_ERR','DECODE_FAIL','FACE_LOCK','SCAN_0xF2','MISMATCH'].forEach((t,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText=`position:absolute;left:${4+(i*11.3)%86}%;top:${2+(i*13.7)%90}%;color:rgba(255,255,255,0.045);font-size:${8+(i%4)*2}px;font-family:monospace;transform:rotate(${(i%2?1:-1)*i*4.5}deg);pointer-events:none;user-select:none`;
+    d.textContent=t;
+    ghost.appendChild(d);
+  });
+
+  // Fragments
+  const container=document.getElementById('fragments-container');
+  container.innerHTML='';
+  fragments.forEach(frag=>{
+    const div=document.createElement('div');
+    div.className='fragment';
+    div.dataset.id=frag.id;
+    div.style.cssText=`left:${frag.dx}px;top:${frag.dy}px;width:${frag.sw}px;height:${frag.sh}px;transform:rotate(${frag.rotation}rad);transform-origin:center center;z-index:${frag.zIndex};opacity:${frag.opacity}`;
+    const cv=document.createElement('canvas');
+    cv.width=frag.sw;cv.height=frag.sh;
+    cv.getContext('2d').drawImage(frag.tileCanvas,0,0);
+    div.appendChild(cv);
+    div.addEventListener('click',()=>toggleFrag(frag.id));
+    container.appendChild(div);
+  });
+
+  document.getElementById('verify-btn').disabled=true;
+  document.getElementById('success-flash').style.display='none';
+  updateCollageStats();
+}
+
+function toggleFrag(id){
+  if(feedback)return;
+  if(selected.has(id))selected.delete(id);else selected.add(id);
+  updateFragmentVisuals();
+  document.getElementById('verify-btn').disabled=selected.size===0;
+  updateCollageStats();
+}
+
+function updateFragmentVisuals(){
+  document.querySelectorAll('.fragment').forEach(div=>{
+    const id=parseInt(div.dataset.id);
+    const isSel=selected.has(id);
+    const frag=fragments.find(f=>f.id===id);
+    if(!frag)return;
+    const cv=div.querySelector('canvas');
+    const ctx=cv.getContext('2d');
+    ctx.clearRect(0,0,frag.sw,frag.sh);
+    ctx.drawImage(frag.tileCanvas,0,0);
+    if(feedback==='right'&&frag.isCorrect){ctx.fillStyle='rgba(0,255,80,0.55)';ctx.fillRect(0,0,frag.sw,frag.sh);}
+    if(feedback==='wrong'&&isSel&&!frag.isCorrect){ctx.fillStyle='rgba(255,30,30,0.55)';ctx.fillRect(0,0,frag.sw,frag.sh);}
+    if(feedback==='wrong'&&frag.isCorrect&&!isSel){ctx.fillStyle='rgba(255,210,0,0.5)';ctx.fillRect(0,0,frag.sw,frag.sh);}
+    const glowColor=isSel?(feedback==='right'?'#00ff44':feedback==='wrong'?'#ff2222':'#00aaff'):'transparent';
+    div.style.outline=isSel?`1px solid ${glowColor}`:'none';
+    div.style.boxShadow=isSel?`0 0 0 1px ${glowColor}, 0 0 5px 1px ${glowColor}88`:'none';
+    div.style.zIndex=isSel?'9999':String(frag.zIndex);
+  });
+}
+
+function updateCollageStats(){
+  const correctCount=fragments.filter(f=>f.isCorrect).length;
+  document.getElementById('collage-stats').textContent=`${selected.size} selected · ${fragments.length} total fragments · click to toggle`;
+  document.getElementById('status-main').textContent=`${correctCount} correct · ${fragments.length} total`;
+}
+
+function updateThumb(){
+  const cv=document.getElementById('thumb-canvas');
+  if(srcCanvas.width>0){
+    const ctx=cv.getContext('2d');
+    cv.width=44;cv.height=44;
+    ctx.drawImage(srcCanvas,srcCanvas.width*0.2,srcCanvas.height*0.1,srcCanvas.width*0.6,srcCanvas.height*0.8,0,0,44,44);
+  }
+}
+
+// ── Verify ──────────────────────────────────────────────────────────────────
+function verify(){
+  const correctIds=new Set(fragments.filter(f=>f.isCorrect).map(f=>f.id));
+  const anyHit=[...selected].some(id=>correctIds.has(id));
+  if(anyHit&&selected.size>0){
+    feedback='right';
+    updateFragmentVisuals();
+    const flash=document.getElementById('success-flash');
+    flash.style.display='flex';
+    setTimeout(()=>{showSuccess();},1200);
+  }else{
+    attempts++;
+    showErrorDialogs();
+  }
+}
+
+function showSuccess(){
+  const msg=SUCCESS_MSGS[Math.floor(Math.random()*SUCCESS_MSGS.length)];
+  document.getElementById('success-title').textContent=msg.title;
+  document.getElementById('success-line1').textContent=msg.line1;
+  document.getElementById('success-line2').textContent=msg.line2;
+  const attEl=document.getElementById('success-attempts');
+  if(attempts>0){attEl.textContent=`${attempts+1} attempt${attempts!==1?'s':''} to recognise yourself.`;attEl.style.display='';}
+  else attEl.style.display='none';
+  showStep('success');
+  document.getElementById('status-main').textContent='Verified OK';
+}
+
+// ── Error dialogs ───────────────────────────────────────────────────────────
+function showErrorDialogs(){
+  const count=8+Math.floor(Math.random()*5);
+  const overlay=document.getElementById('error-overlay');
+  overlay.innerHTML='';
+  overlay.style.display='';
+  const BOX_W=240, STEP_X=20, STEP_Y=16;
+  let spawned=0;
+  function spawnNext(){
+    if(spawned>=count)return;
+    const i=spawned++;
+    const box=document.createElement('div');
+    box.className='error-dialog';
+    box.style.left=`calc(50% - ${BOX_W/2}px + ${(i-(count-1)/2)*STEP_X}px)`;
+    box.style.top=`calc(50% - 90px + ${(i-(count-1)/2)*STEP_Y}px)`;
+    box.style.zIndex=99999+i;
+    const isFront=i===count-1;
+    box.innerHTML=`
+      <div style="background:${isFront?'linear-gradient(to right,#0000aa,#1084d0)':'linear-gradient(to right,#7a7a9a,#9090b0)'};padding:3px 4px;display:flex;align-items:center;justify-content:space-between;user-select:none;cursor:default">
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:14px;height:14px;background:#c0c0c0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;color:#aa0000;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #808080;border-bottom:1px solid #808080">x</div>
+          <span style="color:#fff;font-size:11px;font-weight:bold">Error</span>
+        </div>
+        <button onclick="dismissDialog(this,${isFront})" style="width:16px;height:14px;background:#c0c0c0;border:none;cursor:pointer;font-size:10px;font-weight:bold;color:#000;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #404040;border-bottom:1px solid #404040;display:flex;align-items:center;justify-content:center">x</button>
+      </div>
+      <div style="padding:18px 16px 14px;text-align:center">
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;text-align:left">
+          <div style="width:32px;height:32px;flex-shrink:0;border:2px solid #808080;border-radius:50%;background:#c0c0c0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#cc0000;font-weight:bold">x</div>
+          <div>
+            <div style="font-weight:bold;font-size:12px;margin-bottom:4px">Fail</div>
+            <div style="color:#444;font-size:10px;line-height:1.4">${ERROR_MSGS[i%ERROR_MSGS.length]}</div>
+          </div>
+        </div>
+        <button onclick="dismissDialog(this,false)" style="padding:3px 0;width:88px;font-family:inherit;font-size:11px;background:#c0c0c0;cursor:pointer;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #808080;border-bottom:1px solid #808080;outline:1px dotted #000;outline-offset:-4px">OK</button>
+      </div>`;
+    overlay.appendChild(box);
+    setTimeout(spawnNext,110);
+  }
+  spawnNext();
+  // Show attempt banner
+  const banner=document.getElementById('attempt-banner');
+  banner.style.display='flex';
+  document.getElementById('attempt-text').textContent=`Wrong — ${attempts} failed attempt${attempts!==1?'s':''}. Collage reshuffled.`;
+  document.getElementById('status-attempt').textContent=`Attempt ${attempts+1}`;
+}
+
+function dismissDialog(btn, isFront){
+  if(isFront){
+    document.getElementById('error-overlay').style.display='none';
+    document.getElementById('error-overlay').innerHTML='';
+    setTimeout(()=>{feedback=null;selected=new Set();if(srcCanvas.width>0)buildChallenge(srcCanvas);},200);
+  }else{
+    btn.closest('.error-dialog').remove();
+    if(document.getElementById('error-overlay').querySelectorAll('.error-dialog').length===0){
+      document.getElementById('error-overlay').style.display='none';
+      setTimeout(()=>{feedback=null;selected=new Set();if(srcCanvas.width>0)buildChallenge(srcCanvas);},200);
+    }
+  }
+}
+
+// ── Steps ───────────────────────────────────────────────────────────────────
+function showStep(step){
+  document.getElementById('step-upload').style.display=step==='upload'?'':'none';
+  document.getElementById('step-captcha').style.display=step==='captcha'?'':'none';
+  document.getElementById('step-success').style.display=step==='success'?'':'none';
+}
+
+function resetApp(){
+  stopCam();
+  document.getElementById('desktop-overlay').style.display='none';
+  document.getElementById('main-window').style.display='flex';
+  fragments=[];selected=new Set();feedback=null;attempts=0;bgDataUrl=null;
+  document.getElementById('choose-panel').style.display='flex';
+  document.getElementById('camera-panel').style.display='none';
+  document.getElementById('processing-panel').style.display='none';
+  document.getElementById('attempt-banner').style.display='none';
+  document.getElementById('error-overlay').style.display='none';
+  document.getElementById('status-main').textContent='Waiting for image...';
+  document.getElementById('status-attempt').textContent='Attempt 1';
+  showStep('upload');
+}
+
+function updateStatus(){
+  document.getElementById('status-attempt').textContent=`Attempt ${attempts+1}`;
+}
+
+// ── Desktop ─────────────────────────────────────────────────────────────────
+function openDesktop(){
+  document.getElementById('main-window').style.display='none';
+  const overlay=document.getElementById('desktop-overlay');
+  overlay.style.display='';
+  renderDesktopIcons();
+  clearInterval(desktopClockInterval);
+  desktopClockInterval=setInterval(()=>{
+    const t=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    const el=document.getElementById('desktop-clock');
+    if(el)el.textContent=t;
+  },1000);
+  const t=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('desktop-clock').textContent=t;
+}
+
+const DESKTOP_ICONS_DATA=[
+  {id:'myface',label:'My Face.exe',svg:`<svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="2" y="2" width="28" height="20" fill="#c0c0c0" stroke="#000" stroke-width="1"/><rect x="3" y="3" width="26" height="18" fill="#000080"/><rect x="4" y="4" width="24" height="16" fill="#0000aa"/><rect x="4" y="4" width="8" height="2" fill="#3333dd" opacity="0.6"/><rect x="12" y="22" width="8" height="3" fill="#a0a0a0" stroke="#000" stroke-width="1"/><rect x="8" y="25" width="16" height="2" fill="#808080" stroke="#000" stroke-width="1"/></svg>`},
+  {id:'memories',label:'Lost Memories',svg:`<svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="2" y="11" width="28" height="18" fill="#ddbb44" stroke="#000" stroke-width="1"/><rect x="3" y="12" width="26" height="16" fill="#ffdd66"/><rect x="2" y="8" width="10" height="4" fill="#ddbb44" stroke="#000" stroke-width="1"/></svg>`},
+  {id:'errors',label:'Error Log (∞)',svg:`<svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><polygon points="16,2 30,28 2,28" fill="#ffdd00" stroke="#000" stroke-width="1"/><polygon points="16,4 28,27 4,27" fill="#ffee44"/><rect x="15" y="11" width="2" height="10" fill="#000"/><rect x="15" y="23" width="2" height="2" fill="#000"/></svg>`},
+  {id:'mirror',label:'Mirror.dll',svg:`<svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="6" y="2" width="20" height="24" fill="#c0a060" stroke="#000" stroke-width="1"/><rect x="8" y="4" width="16" height="20" fill="#88aacc"/><ellipse cx="16" cy="11" rx="5" ry="6" fill="none" stroke="#aaccee" stroke-width="1" opacity="0.7"/><rect x="12" y="26" width="8" height="2" fill="#c0a060" stroke="#000" stroke-width="1"/></svg>`},
+  {id:'void',label:'The Void',svg:`<svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><circle cx="16" cy="16" r="13" fill="#4488cc" stroke="#000" stroke-width="1"/><rect x="10" y="8" width="8" height="5" fill="#44aa44" rx="1"/><line x1="16" y1="3" x2="16" y2="29" stroke="#2266aa" stroke-width="1"/><line x1="3" y1="16" x2="29" y2="16" stroke="#2266aa" stroke-width="1"/></svg>`},
+  {id:'recycle',label:'Recycle Bin',svg:`<svg width="32" height="32" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="7" y="12" width="18" height="16" fill="#c0c0c0" stroke="#000" stroke-width="1"/><rect x="8" y="13" width="16" height="14" fill="#d4d0c8"/><rect x="6" y="9" width="20" height="3" fill="#c0c0c0" stroke="#000" stroke-width="1"/><rect x="11" y="14" width="1" height="12" fill="#a0a0a0"/><rect x="15" y="14" width="1" height="12" fill="#a0a0a0"/><rect x="19" y="14" width="1" height="12" fill="#a0a0a0"/></svg>`},
+];
+
+function renderDesktopIcons(){
+  const panel=document.getElementById('desktop-icons-panel');
+  panel.innerHTML='';
+  DESKTOP_ICONS_DATA.forEach(ic=>{
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;width:72px;cursor:default;user-select:none;padding:4px';
+    div.innerHTML=`<div style="image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.5))">${ic.svg}</div><div style="color:#fff;font-size:10px;text-align:center;line-height:1.3;padding:1px 2px;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000">${ic.label}</div>`;
+    div.addEventListener('mouseenter',()=>div.querySelector('div:last-child').style.background='#000080');
+    div.addEventListener('mouseleave',()=>div.querySelector('div:last-child').style.background='transparent');
+    div.addEventListener('dblclick',()=>openDesktopWindow(ic.id));
+    panel.appendChild(div);
+  });
+}
+
+function openDesktopWindow(id){
+  desktopWindowId++;
+  const wid=desktopWindowId;
+  const CONTENT={
+    myface:{title:'My Face.exe',w:320,h:260,body:()=>{
+      const d=document.createElement('div');
+      d.style.padding='12px';
+      d.innerHTML=`<div style="border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #dfdfdf;border-bottom:2px solid #dfdfdf;background:#000;height:140px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;position:relative;overflow:hidden">${bgDataUrl?`<img src="${bgDataUrl}" style="width:100%;height:100%;object-fit:cover;filter:blur(3px) brightness(0.7);transform:scale(1.1)">`:'<div style="color:#444;font-family:monospace;font-size:10px">NO_FACE_FOUND.dat</div>'}<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#00ff00;font-family:monospace;font-size:10px;text-shadow:0 0 8px #00ff00;flex-direction:column;gap:4px"><div>IDENTITY_SCAN.EXE</div><div style="opacity:0.7">subject: unknown</div><div style="opacity:0.5;font-size:9px">confidence: ${Math.floor(Math.random()*30+5)}%</div></div></div><div style="color:#444;font-size:10px;line-height:1.7">File last modified: <b>unknown</b><br>Owner: <b>unresolved</b><br>Location: <b>C:\\Who\\Am\\I\\</b></div>`;
+      return d;
+    }},
+    memories:{title:'Lost Memories',w:300,h:220,body:()=>{
+      const d=document.createElement('div');d.style.padding='8px';
+      const list=document.createElement('div');
+      list.style.cssText='border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #dfdfdf;border-bottom:2px solid #dfdfdf;background:#fff;padding:6px;height:150px;overflow-y:auto';
+      ['face_scan_001.dat - corrupted','identity_backup.bak - missing','childhood.mem - not found','yesterday.log - access denied','name.txt - empty','face_v2.exe - failed to load','who_i_was.zip - 0 bytes','self_portrait.bmp - unreadable'].forEach(f=>{
+        const row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;gap:8px;padding:2px 4px;border-bottom:1px solid #e0e0e0;cursor:default;font-size:10px';
+        row.innerHTML=`<svg width="14" height="14" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="2" y="4" width="20" height="24" fill="#fff" stroke="#000" stroke-width="1"/><polygon points="18,4 22,8 22,4" fill="#808080"/><polygon points="18,4 18,8 22,8" fill="#c0c0c0"/><rect x="5" y="12" width="12" height="1" fill="#808080"/><rect x="5" y="15" width="10" height="1" fill="#808080"/></svg><span>${f}</span>`;
+        row.addEventListener('mouseenter',()=>{row.style.background='#000080';row.style.color='#fff';});
+        row.addEventListener('mouseleave',()=>{row.style.background='transparent';row.style.color='';});
+        list.appendChild(row);
+      });
+      d.appendChild(list);return d;
+    }},
+    errors:{title:'Error Log (∞)',w:340,h:240,body:()=>{
+      const d=document.createElement('div');d.style.padding='8px';
+      const box=document.createElement('div');
+      box.style.cssText='border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #dfdfdf;border-bottom:2px solid #dfdfdf;background:#000;padding:8px;height:170px;overflow-y:auto;font-family:monospace;font-size:9px;color:#00ff00;line-height:1.7';
+      const lines=[[`[0x0000] BOOT sequence initiated`,0],[`[0x0001] Loading self... failed`,0],[`[0x0002] Retrying identity lookup`,0],[`[0x0003] Attempts: ${attempts+1}`,0],[`[0x0004] Face hash mismatch`,0],[`[0x0005] Memory fragmented`,0],[`[0x0006] Reconstructing...`,0],[`[0x0007] Who is this?`,0],[`[0x0008] Neural net confused`,1],[`[0x0009] NULL_SELF_PTR`,1],[`[0x000A] Core dump: everywhere`,1],[`[0x000B] Verification forced`,2],[`[0x000C] Access: granted (maybe)`,2],[`[0x000D] Are you still there?`,2],[`[0x000E] ...`,2]];
+      lines.forEach(([text,level])=>{const row=document.createElement('div');row.style.color=['#00ff00','#ff8800','#ffff00'][level];row.textContent=text;box.appendChild(row);});
+      d.appendChild(box);return d;
+    }},
+    mirror:{title:'Mirror.dll',w:260,h:280,body:()=>{
+      const d=document.createElement('div');d.style.cssText='padding:12px;text-align:center';
+      d.innerHTML=`<div style="border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #dfdfdf;border-bottom:2px solid #dfdfdf;background:#001830;height:180px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;position:relative;overflow:hidden">${bgDataUrl?`<img src="${bgDataUrl}" style="width:100%;height:100%;object-fit:cover;filter:hue-rotate(180deg) saturate(0.4) brightness(0.6);transform:scaleX(-1)">`:''}<div style="position:absolute;bottom:8px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.4);font-family:monospace;font-size:9px">reflection.exe</div></div><div style="font-size:10px;color:#555;font-style:italic;line-height:1.6">"The mirror does not know what it is showing."</div>`;
+      return d;
+    }},
+    void:{title:'The Void',w:300,h:220,body:()=>{
+      const d=document.createElement('div');
+      d.innerHTML=`<div style="background:#000;height:168px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px"><div style="width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#1a1a2e,#000);border:1px solid #111"></div><div style="color:#222;font-family:monospace;font-size:10px;text-align:center;line-height:1.8"><div>nothing to display</div><div style="color:#111">nothing at all</div></div></div>`;
+      return d;
+    }},
+    recycle:{title:'Recycle Bin',w:300,h:230,body:()=>{
+      const d=document.createElement('div');d.style.padding='8px';
+      d.innerHTML=`<div style="border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #dfdfdf;border-bottom:2px solid #dfdfdf;background:#fff;height:160px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px"><svg width="48" height="48" viewBox="0 0 32 32" shapeRendering="crispEdges"><rect x="7" y="12" width="18" height="16" fill="#c0c0c0" stroke="#000" stroke-width="1"/><rect x="8" y="13" width="16" height="14" fill="#d4d0c8"/><rect x="10" y="15" width="5" height="4" fill="#fff" stroke="#808080" stroke-width="1" transform="rotate(-8 12 17)"/><rect x="6" y="9" width="20" height="3" fill="#c0c0c0" stroke="#000" stroke-width="1"/><rect x="13" y="7" width="6" height="3" fill="#c0c0c0" stroke="#000" stroke-width="1"/></svg><div style="font-size:10px;color:#444;text-align:center;line-height:1.7">Previous versions of yourself<br><span style="color:#888;font-size:9px">1 item · unknown size</span></div></div>`;
+      return d;
+    }},
+  };
+  const cfg=CONTENT[id];if(!cfg)return;
+  const win=document.createElement('div');
+  win.className='win95-window';
+  win.style.left=(60+(wid%5)*28)+'px';
+  win.style.top=(40+(wid%4)*24)+'px';
+  win.style.width=cfg.w+'px';
+  win.dataset.id=id;
+  win.innerHTML=`
+    <div style="background:linear-gradient(to right,#000080,#1084d0);padding:3px 4px;display:flex;align-items:center;justify-content:space-between;cursor:default;user-select:none">
+      <span style="color:#fff;font-size:11px;font-weight:bold;display:flex;align-items:center;gap:4px">
+        <div style="width:14px;height:14px;background:#c0c0c0;border:1px solid #808080;display:flex;align-items:center;justify-content:center;font-size:8px">-</div>
+        ${cfg.title}
+      </span>
+      <div style="display:flex;gap:2px">
+        <button style="width:16px;height:14px;background:#c0c0c0;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #404040;border-bottom:1px solid #404040;font-size:9px;cursor:pointer;padding:0">-</button>
+        <button style="width:16px;height:14px;background:#c0c0c0;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #404040;border-bottom:1px solid #404040;font-size:9px;cursor:pointer;padding:0">[ ]</button>
+        <button onclick="this.closest('.win95-window').remove()" style="width:16px;height:14px;background:#c0c0c0;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #404040;border-bottom:1px solid #404040;font-size:9px;cursor:pointer;padding:0;font-weight:bold">x</button>
+      </div>
+    </div>
+    <div style="border-bottom:1px solid #808080;padding:1px 4px;display:flex;gap:2px;background:#c0c0c0" class="win-menubar"></div>
+    <div class="win-body"></div>`;
+  ['File','Edit','View'].forEach(m=>{
+    const s=document.createElement('span');s.textContent=m;s.style.cssText='padding:1px 6px;cursor:default;font-size:11px';
+    s.addEventListener('mouseenter',()=>{s.style.background='#000080';s.style.color='#fff';});
+    s.addEventListener('mouseleave',()=>{s.style.background='transparent';s.style.color='';});
+    win.querySelector('.win-menubar').appendChild(s);
+  });
+  win.querySelector('.win-body').appendChild(cfg.body());
+  win.addEventListener('mousedown',()=>{document.querySelectorAll('.win95-window').forEach(w=>w.style.zIndex='9000');win.style.zIndex='10000';});
+  document.getElementById('desktop-windows').appendChild(win);
+}
+</script>
+</body>
+</html>
